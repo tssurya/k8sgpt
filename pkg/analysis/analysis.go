@@ -126,7 +126,6 @@ func NewAnalysis(
 	if len(configAI.Providers) == 0 {
 		return nil, errors.New("AI provider not specified in configuration. Please run k8sgpt auth")
 	}
-
 	// Backend string will have high priority than a default provider
 	// Hence, use the default provider only if the backend is not specified by the user.
 	if configAI.DefaultProvider != "" && backend == "" {
