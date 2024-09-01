@@ -39,6 +39,7 @@ func (c *ClaudeClient) Configure(config IAIConfig) error {
 
 func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string, error) {
 	// Create a completion request
+	fmt.Printf("SURYA: %s", prompt)
 	resp, err := c.client.CreateMessages(ctx, anthropic.MessagesRequest{
 		Model: anthropic.ModelClaude3Dot5Sonnet20240620,
 		Messages: []anthropic.Message{
