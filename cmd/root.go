@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
+	"github.com/k8sgpt-ai/k8sgpt/cmd/aichaos"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/analyze"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/auth"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/cache"
@@ -76,6 +77,7 @@ func init() {
 	rootCmd.AddCommand(serve.ServeCmd)
 	rootCmd.AddCommand(cache.CacheCmd)
 	rootCmd.AddCommand(customanalyzer.CustomAnalyzerCmd)
+	rootCmd.AddCommand(aichaos.AIChaosCmd)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s/k8sgpt/k8sgpt.yaml)", xdg.ConfigHome))
 	rootCmd.PersistentFlags().StringVar(&kubecontext, "kubecontext", "", "Kubernetes context to use. Only required if out-of-cluster.")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
