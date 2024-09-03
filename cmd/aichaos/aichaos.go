@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	backend string
-	//output   string
-	filePath string
-	fileName string
+	backend       string
+	chaosScenario string
+	filePath      string
+	fileName      string
 )
 
 // AIChaosCmd represents the problems command
@@ -69,9 +69,10 @@ var AIChaosCmd = &cobra.Command{
 			}
 			//fmt.Printf("SURYA %v", formattedYAML)
 			prompt = fmt.Sprintf("Act as a Chaos generator in a Kubernetes cluster. Read the yamls I have provided: %s "+
-				"and introduce random pod label changes such that network policies stop having effect", formattedYAML.String())
+				"and introduce random pod label changes such that network policies don't behave as expected and what should"+
+				" be allowed is denied and what should be denied is allowed", formattedYAML.String())
 		} else {
-			prompt = "That was good but don't introduce new label changes; swap the existing labels"
+			prompt = chaosScenario
 		}
 		_, err = chaosGenerator.GenerateChaos(prompt)
 		if err != nil {
@@ -84,7 +85,8 @@ var AIChaosCmd = &cobra.Command{
 func init() {
 	AIChaosCmd.Flags().StringVarP(&fileName, "filename", "f", "", "YAML File that contains the cluster config")
 	// explain flag
-	AIChaosCmd.Flags().StringVarP(&filePath, "filepath", "e", "", "File path for the yaml file")
+	AIChaosCmd.Flags().StringVarP(&filePath, "filepath", "p", "", "File path for the yaml file")
+	AIChaosCmd.Flags().StringVarP(&chaosScenario, "scenario", "s", "", "Explain Chaos Scenario")
 	// add flag for backend
 	AIChaosCmd.Flags().StringVarP(&backend, "backend", "b", "", "Backend AI provider")
 }
