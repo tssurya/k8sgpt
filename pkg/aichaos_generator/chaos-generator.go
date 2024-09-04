@@ -105,10 +105,11 @@ func (cg *ChaosGenerator) Close() {
 }
 
 func (cg *ChaosGenerator) GenerateChaos(prompt string) (string, error) {
+
 	response, err := cg.AIClient.GetCompletion(cg.Context, prompt)
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("SURYA: %v", response)
+	// fmt.Printf("SURYA: %v", response)
 	return response, nil
 }
