@@ -10,6 +10,8 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/spf13/viper"
+
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ChaosGenerator struct {
@@ -94,6 +96,16 @@ func NewAIChaosGenerator(
 	}
 	cg.AIClient = aiClient
 	cg.AnalysisAIProvider = aiProvider.Name
+
+	gatewayv1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var httpRouteList gatewayv1.HTTPRouteList
+	err = cg.Client.CtrlClient.List(cg.Context, &httpRouteList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get httproutes from the cluster: %w", err)
+	}
+	gwContext := ai.GatewayAPIContext{HTTPRoutes: httpRouteList.Items}
+
+	cg.Context = context.WithValue(cg.Context, "gwContext", gwContext)
 	return cg, nil
 }
 
@@ -105,7 +117,6 @@ func (cg *ChaosGenerator) Close() {
 }
 
 func (cg *ChaosGenerator) GenerateChaos(prompt string) (string, error) {
-
 	response, err := cg.AIClient.GetCompletion(cg.Context, prompt)
 	if err != nil {
 		return "", err

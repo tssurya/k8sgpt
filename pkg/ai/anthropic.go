@@ -6,12 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/liushuangls/go-anthropic/v2"
 	"k8s.io/utils/ptr"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const anthropicClientName = "claude"
+
+var attachYamlContext bool
+
+type GatewayAPIContext struct {
+	Gateways   []gatewayv1.Gateway
+	HTTPRoutes []gatewayv1.HTTPRoute
+}
 
 type ClaudeClient struct {
 	nopCloser
@@ -72,10 +81,22 @@ func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string
 	// fmt.Print("> ")
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
+		attachYamlContext = false
 		input := s.Text()
 		if input == "exit" {
 			return "", nil
 		}
+
+		if strings.HasPrefix(input, "look at my cluster") {
+			input = strings.TrimPrefix(input, "look at my cluster")
+			attachYamlContext = true
+		}
+		if attachYamlContext {
+			a := ctx.Value("gwContext")
+			b := a.(GatewayAPIContext)
+			input += fmt.Sprintf("applied routes in my cluster:\n%v", b.HTTPRoutes)
+		}
+
 		req.Messages = append(req.Messages, anthropic.NewUserTextMessage(input))
 		resp, err := c.client.CreateMessages(ctx, req)
 		if err != nil {
