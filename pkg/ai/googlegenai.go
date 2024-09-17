@@ -14,9 +14,11 @@ limitations under the License.
 package ai
 
 import (
+	"bufio"
 	"context"
-	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/google/generative-ai-go/genai"
@@ -67,29 +69,88 @@ func (c *GoogleGenAIClient) GetCompletion(ctx context.Context, prompt string) (s
 	model.SetTopK(c.topK)
 	model.SetMaxOutputTokens(int32(c.maxTokens))
 
-	// Google AI SDK is capable of different inputs than just text, for now set explicit text prompt type.
-	// Similarly, we could stream the response. For now k8sgpt does not support streaming.
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	model.SystemInstruction = &genai.Content{
+		Role:  "user",
+		Parts: []genai.Part{genai.Text("You are a Kubernetes networking and Gateway API expert. You are have vase experience with chaos tests and stress tests")},
+	}
+
+	cs := model.StartChat()
+	resp, err := cs.SendMessage(ctx, genai.Text(prompt))
 	if err != nil {
 		return "", err
 	}
+	fmt.Printf("%s\n\n", fmtResp(resp.Candidates[0]))
+	fmt.Print("> ")
 
-	if len(resp.Candidates) == 0 {
-		if resp.PromptFeedback.BlockReason == genai.BlockReasonSafety {
-			for _, r := range resp.PromptFeedback.SafetyRatings {
-				if !r.Blocked {
-					continue
-				}
-				return "", fmt.Errorf("complection blocked due to %v with probability %v", r.Category.String(), r.Probability.String())
-			}
+	s := bufio.NewScanner(os.Stdin)
+	for s.Scan() {
+		input := s.Text()
+		if input == "exit" {
+			return "", nil
 		}
-		return "", errors.New("no complection returned; unknown reason")
+		if strings.HasPrefix(input, "look at my cluster") {
+			input = strings.TrimPrefix(input, "look at my cluster")
+			a := ctx.Value("gwContext")
+			b := a.(GatewayAPIContext)
+			input += fmt.Sprintf("applied routes in my cluster:\n%v", b.HTTPRoutes)
+		}
+		req := genai.Text(input)
+		resp, err := cs.SendMessage(ctx, genai.Text(req))
+		if err != nil {
+			fmt.Printf("ChatCompletion error: %v\n", err)
+			// continue
+			return "", err
+		}
+		fmt.Printf("%s\n\n", fmtResp(resp.Candidates[0]))
+		fmt.Print("> ")
 	}
+	return "", nil
 
-	// Format output.
-	// TODO(bwplotka): Provider richer output in certain cases e.g. suddenly finished
-	// completion based on finish reasons or safety rankings.
-	got := resp.Candidates[0]
+	// // Google AI SDK is capable of different inputs than just text, for now set explicit text prompt type.
+	// // Similarly, we could stream the response. For now k8sgpt does not support streaming.
+	// resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// if len(resp.Candidates) == 0 {
+	// 	if resp.PromptFeedback.BlockReason == genai.BlockReasonSafety {
+	// 		for _, r := range resp.PromptFeedback.SafetyRatings {
+	// 			if !r.Blocked {
+	// 				continue
+	// 			}
+	// 			return "", fmt.Errorf("complection blocked due to %v with probability %v", r.Category.String(), r.Probability.String())
+	// 		}
+	// 	}
+	// 	return "", errors.New("no complection returned; unknown reason")
+	// }
+
+	// // Format output.
+	// // TODO(bwplotka): Provider richer output in certain cases e.g. suddenly finished
+	// // completion based on finish reasons or safety rankings.
+	// got := resp.Candidates[0]
+	// var output string
+	// for _, part := range got.Content.Parts {
+	// 	switch o := part.(type) {
+	// 	case genai.Text:
+	// 		output += string(o)
+	// 		output += "\n"
+	// 	default:
+	// 		color.Yellow("found unsupported AI response part of type %T; ignoring", part)
+	// 	}
+	// }
+
+	// if got.CitationMetadata != nil && len(got.CitationMetadata.CitationSources) > 0 {
+	// 	output += "Citations:\n"
+	// 	for _, source := range got.CitationMetadata.CitationSources {
+	// 		// TODO(bwplotka): Give details around what exactly words could be attributed to the citation.
+	// 		output += fmt.Sprintf("* %s, %s\n", *source.URI, source.License)
+	// 	}
+	// }
+	// return output, nil
+}
+
+func fmtResp(got *genai.Candidate) string {
 	var output string
 	for _, part := range got.Content.Parts {
 		switch o := part.(type) {
@@ -100,15 +161,7 @@ func (c *GoogleGenAIClient) GetCompletion(ctx context.Context, prompt string) (s
 			color.Yellow("found unsupported AI response part of type %T; ignoring", part)
 		}
 	}
-
-	if got.CitationMetadata != nil && len(got.CitationMetadata.CitationSources) > 0 {
-		output += "Citations:\n"
-		for _, source := range got.CitationMetadata.CitationSources {
-			// TODO(bwplotka): Give details around what exactly words could be attributed to the citation.
-			output += fmt.Sprintf("* %s, %s\n", *source.URI, source.License)
-		}
-	}
-	return output, nil
+	return output
 }
 
 func (c *GoogleGenAIClient) GetName() string {
