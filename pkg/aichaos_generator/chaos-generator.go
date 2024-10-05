@@ -10,6 +10,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/spf13/viper"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ChaosGenerator struct {
@@ -94,6 +95,15 @@ func NewAIChaosGenerator(
 	}
 	cg.AIClient = aiClient
 	cg.AnalysisAIProvider = aiProvider.Name
+
+	corev1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var serviceList corev1.ServiceList
+	if err = cg.Client.CtrlClient.List(cg.Context, &serviceList); err != nil {
+		return nil, fmt.Errorf("failed to get services from the cluster: %w", err)
+	}
+	svcContext := ai.ServiceAPIContext{Services: serviceList.Items}
+	cg.Context = context.WithValue(cg.Context, "svcContext", svcContext)
+
 	return cg, nil
 }
 

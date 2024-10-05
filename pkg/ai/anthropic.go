@@ -6,12 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/liushuangls/go-anthropic/v2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 )
 
 const anthropicClientName = "claude"
+
+var attachYamlContext bool
+
+type ServiceAPIContext struct {
+	Services []corev1.Service
+}
 
 type ClaudeClient struct {
 	nopCloser
@@ -40,12 +48,10 @@ func (c *ClaudeClient) Configure(config IAIConfig) error {
 }
 
 func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string, error) {
-	// Create a completion request
-	// fmt.Printf("PROMPT: %s", prompt)
 
 	req := anthropic.MessagesRequest{
 		Model:       anthropic.ModelClaude3Dot5Sonnet20240620,
-		System:      "You are a Kubernetes networking and Gateway API expert. You are have vase experience with chaos tests and stress tests",
+		System:      "You are a Kubernetes Networking expert. You also have vast experience with Litmus Networking chaos tests and stress tests.",
 		Temperature: ptr.To(c.temperature),
 		TopP:        ptr.To(c.topP),
 		TopK:        ptr.To[int](int(c.topK)),
@@ -72,9 +78,19 @@ func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string
 	// fmt.Print("> ")
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
+		attachYamlContext = false
 		input := s.Text()
 		if input == "exit" {
 			return "", nil
+		}
+		if strings.HasPrefix(input, "look at my cluster") {
+			input = strings.TrimPrefix(input, "look at my cluster")
+			attachYamlContext = true
+		}
+		if attachYamlContext {
+			a := ctx.Value("svcContext")
+			b := a.(ServiceAPIContext)
+			input += fmt.Sprintf("applied services in my cluster:\n%v", b.Services)
 		}
 		req.Messages = append(req.Messages, anthropic.NewUserTextMessage(input))
 		resp, err := c.client.CreateMessages(ctx, req)
