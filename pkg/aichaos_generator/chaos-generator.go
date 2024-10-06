@@ -10,6 +10,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/spf13/viper"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 type ChaosGenerator struct {
@@ -94,6 +95,15 @@ func NewAIChaosGenerator(
 	}
 	cg.AIClient = aiClient
 	cg.AnalysisAIProvider = aiProvider.Name
+
+	networkingv1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var netpolList networkingv1.NetworkPolicyList
+	err = cg.Client.CtrlClient.List(cg.Context, &netpolList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get network policies from the cluster: %w", err)
+	}
+	npContext := ai.NetworkPolicyAPIContext{NetworkPolicy: netpolList.Items}
+	cg.Context = context.WithValue(cg.Context, "npContext", npContext)
 	return cg, nil
 }
 
