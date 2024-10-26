@@ -10,6 +10,9 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/spf13/viper"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 type ChaosGenerator struct {
@@ -94,6 +97,31 @@ func NewAIChaosGenerator(
 	}
 	cg.AIClient = aiClient
 	cg.AnalysisAIProvider = aiProvider.Name
+
+	networkingv1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var netpolList networkingv1.NetworkPolicyList
+	err = cg.Client.CtrlClient.List(cg.Context, &netpolList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get network policies from the cluster: %w", err)
+	}
+	corev1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var nsList corev1.NamespaceList
+	err = cg.Client.CtrlClient.List(cg.Context, &nsList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get namespaces from the cluster: %w", err)
+	}
+	corev1.AddToScheme(cg.Client.CtrlClient.Scheme())
+	var stsList appsv1.StatefulSetList
+	err = cg.Client.CtrlClient.List(cg.Context, &stsList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get statefulsets from the cluster: %w", err)
+	}
+	npContext := ai.NetworkPolicyAPIContext{
+		Namespaces:    nsList.Items,
+		NetworkPolicy: netpolList.Items,
+		StatefulSets:  stsList.Items,
+	}
+	cg.Context = context.WithValue(cg.Context, "npContext", npContext)
 	return cg, nil
 }
 

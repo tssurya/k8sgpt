@@ -6,12 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/liushuangls/go-anthropic/v2"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/utils/ptr"
 )
 
 const anthropicClientName = "claude"
+
+var attachYamlContext bool
+
+type NetworkPolicyAPIContext struct {
+	Namespaces    []corev1.Namespace
+	NetworkPolicy []networkingv1.NetworkPolicy
+	StatefulSets  []appsv1.StatefulSet
+}
 
 type ClaudeClient struct {
 	nopCloser
@@ -40,12 +52,10 @@ func (c *ClaudeClient) Configure(config IAIConfig) error {
 }
 
 func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string, error) {
-	// Create a completion request
-	// fmt.Printf("PROMPT: %s", prompt)
 
 	req := anthropic.MessagesRequest{
 		Model:       anthropic.ModelClaude3Dot5Sonnet20240620,
-		System:      "You are a Kubernetes networking and Gateway API expert. You are have vase experience with chaos tests and stress tests",
+		System:      "You are a Kubernetes networking and NetworkPolicy API expert. You have vast experience with NetworkPolicy chaos tests.",
 		Temperature: ptr.To(c.temperature),
 		TopP:        ptr.To(c.topP),
 		TopK:        ptr.To[int](int(c.topK)),
@@ -72,9 +82,19 @@ func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string
 	// fmt.Print("> ")
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
+		attachYamlContext = false
 		input := s.Text()
 		if input == "exit" {
 			return "", nil
+		}
+		if strings.HasPrefix(input, "look at my cluster") {
+			input = strings.TrimPrefix(input, "look at my cluster")
+			attachYamlContext = true
+		}
+		if attachYamlContext {
+			a := ctx.Value("npContext")
+			b := a.(NetworkPolicyAPIContext)
+			input += fmt.Sprintf("applied namespaces in my cluster:\n%v; applied stateful-sets in my cluster:\n%v; applied network-policies in my cluster:\n%v", b.Namespaces, b.StatefulSets, b.NetworkPolicy)
 		}
 		req.Messages = append(req.Messages, anthropic.NewUserTextMessage(input))
 		resp, err := c.client.CreateMessages(ctx, req)
