@@ -54,7 +54,7 @@ func (c *ClaudeClient) Configure(config IAIConfig) error {
 func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string, error) {
 
 	req := anthropic.MessagesRequest{
-		Model:       anthropic.ModelClaude3Dot5Sonnet20240620,
+		Model:       anthropic.ModelClaude3Dot5Sonnet20241022,
 		System:      "You are a Kubernetes networking and NetworkPolicy API expert. You have vast experience with NetworkPolicy chaos tests.",
 		Temperature: ptr.To(c.temperature),
 		TopP:        ptr.To(c.topP),

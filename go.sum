@@ -1238,6 +1238,8 @@ github.com/lithammer/fuzzysearch v1.1.8 h1:/HIuJnjHuXS8bKaiTMeeDlW2/AyIWk2brx1V8
 github.com/lithammer/fuzzysearch v1.1.8/go.mod h1:IdqeyBClc3FFqSzYq/MXESsS4S0FsZ5ajtkr5xPLts4=
 github.com/liushuangls/go-anthropic/v2 v2.7.0 h1:pdsmwM65M/9NDJnmYN9JnSNSG3uJnXtCcJLHWiXHtXo=
 github.com/liushuangls/go-anthropic/v2 v2.7.0/go.mod h1:8BKv/fkeTaL5R9R9bGkaknYBueyw2WxY20o7bImbOek=
+github.com/liushuangls/go-anthropic/v2 v2.9.0 h1:uGtXaypQf4D79hZdmajPciBcHvz5Z7tdU77DLJ4siI4=
+github.com/liushuangls/go-anthropic/v2 v2.9.0/go.mod h1:8BKv/fkeTaL5R9R9bGkaknYBueyw2WxY20o7bImbOek=
 github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
 github.com/lyft/protoc-gen-star v0.6.1/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
