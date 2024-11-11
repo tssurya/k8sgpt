@@ -49,8 +49,6 @@ func (c *ClaudeClient) Configure(config IAIConfig) error {
 }
 
 func (c *ClaudeClient) GetCompletion(ctx context.Context, prompt string) (string, error) {
-	// Create a completion request
-	// fmt.Printf("PROMPT: %s", prompt)
 
 	req := anthropic.MessagesRequest{
 		Model:       anthropic.ModelClaude3Dot5Sonnet20240620,
